@@ -1,0 +1,5 @@
+qlearning_architecture.*
+.Xil
+project
+!.gitignore
+!qlearning_architecture.tcl
