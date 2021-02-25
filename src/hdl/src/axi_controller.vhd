@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
 
 entity axi_controller is
     generic (        
@@ -114,10 +115,10 @@ architecture Behavioral of axi_controller is
 	signal slv_reg_rden	: std_logic;
 	signal slv_reg_wren	: std_logic;
 	
-	signal slv_reg_alpha_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal slv_reg_gamma_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal slv_reg_alpha_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(1, C_S_AXI_DATA_WIDTH));
+	signal slv_reg_gamma_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(1, C_S_AXI_DATA_WIDTH));
 	signal slv_reg_episodes_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
-	signal slv_reg_enable_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
+	signal slv_reg_enable_in : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0) := (others => '0');
 	
 	
 	signal slv_reg_alpha_out : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);

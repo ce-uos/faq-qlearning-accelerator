@@ -1,6 +1,8 @@
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+use work.envconfig.ALL;
 
 entity qlearning_axi is
 
@@ -8,9 +10,9 @@ generic (
         -- Width of S_AXI data bus
         C_S_AXI_DATA_WIDTH	: integer	:= 32;
         -- Width of S_AXI address bus
-        C_S_AXI_ADDR_WIDTH	: integer	:= 32
+        C_S_AXI_ADDR_WIDTH	: integer	:= 32;
         
---        C_M_AXIS_TDATA_WIDTH	: integer	:= 32
+        C_M_AXIS_TDATA_WIDTH	: integer	:= 64
     );
 port (
         clk : in std_logic;
@@ -74,13 +76,13 @@ port (
         S_AXI_RVALID	: out std_logic;
         -- Read ready. This signal indicates that the master can
             -- accept the read data and response information.
-        S_AXI_RREADY	: in std_logic
+        S_AXI_RREADY	: in std_logic;
         
---        M_AXIS_ACLK : in std_logic;
---        M_AXIS_TVALID : out std_logic;
---        M_AXIS_TDATA : out std_logic_vector(C_M_AXIS_TDATA_WIDTH-1 downto 0);
---        M_AXIS_TLAST : out std_logic;
---        M_AXIS_TREADY : in std_logic
+        M_AXIS_ACLK : in std_logic;
+        M_AXIS_TVALID : out std_logic;
+        M_AXIS_TDATA : out std_logic_vector(C_M_AXIS_TDATA_WIDTH-1 downto 0);
+        M_AXIS_TLAST : out std_logic;
+        M_AXIS_TREADY : in std_logic
     );
 end qlearning_axi;
 
@@ -96,10 +98,15 @@ architecture Behavioral of qlearning_axi is
     signal enable_module2axi : std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 
     signal axis_read : std_logic;
+    signal axis_data : std_logic_vector(env_action_num*env_reward_width-1 downto 0);
+    signal m_axis_tlast_reg : std_logic := '0';
+    signal m_axis_tvalid_reg : std_logic := '0';
+    
+    signal pointer : std_logic_vector(31 downto 0) := (others => '0');
 
 begin
 
---axis_read <= M_AXIS_TREADY and (not enable_axi2module(0));
+axis_read <= M_AXIS_TREADY and (not enable_axi2module(0));
 
 
 qlearnings_sys : entity work.qlearning_system port map (
@@ -109,7 +116,10 @@ qlearnings_sys : entity work.qlearning_system port map (
     alpha_out => alpha_module2axi,
     gamma_in => gamma_axi2module,
     gamma_out => gamma_module2axi,
-    episodes => episodes_module2axi
+    episodes => episodes_module2axi,
+    axis_read => axis_read,
+    axis_pointer => pointer(env_state_width-1 downto 0),
+    axis_data => axis_data
 );
 
 axi_control : entity work.axi_controller generic map (
@@ -149,5 +159,25 @@ axi_control : entity work.axi_controller generic map (
     S_AXI_RVALID  => S_AXI_RVALID,
     S_AXI_RREADY  => S_AXI_RREADY
 );
+
+process (clk) begin
+    if rising_edge(clk) then
+        if axis_read = '1' then
+            if unsigned(pointer) < to_unsigned(env_state_num-1, 32) then
+                pointer <= std_logic_vector(unsigned(pointer) + 1);
+                m_axis_tlast_reg <= '0';
+                m_axis_tvalid_reg <= '1';
+            else
+                pointer <= (others => '0');
+                m_axis_tlast_reg <= '1';
+                m_axis_tvalid_reg <= '1';
+            end if;
+        end if;
+    end if;
+end process;
+
+M_AXIS_TLAST <= m_axis_tlast_reg;
+M_AXIS_TVALID <= m_axis_tvalid_reg;
+M_AXIS_TDATA <= axis_data;
 
 end Behavioral;

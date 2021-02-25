@@ -30,7 +30,11 @@ entity qlearning is
     alpha_in : in std_logic_vector(31 downto 0);
     alpha_out : out std_logic_vector(31 downto 0);
     gamma_in : in std_logic_vector(31 downto 0);
-    gamma_out : out std_logic_vector(31 downto 0)
+    gamma_out : out std_logic_vector(31 downto 0);
+    
+    axis_read : in std_logic;
+    axis_pointer : in std_logic_vector(state_width-1 downto 0);
+    axis_data : out std_logic_vector(action_num*reward_width-1 downto 0)
   
   );
 end qlearning;
@@ -73,10 +77,16 @@ architecture Behavioral of qlearning is
     signal maxidxdbg : leveltemps;
     
     signal ready : std_logic := '0';
+    
+    signal action_rams_ren : std_logic;
+    signal action_rams_ra : std_logic_vector(state_width-1 downto 0);
 begin
 
     lfsr0 : entity work.lfsr_random generic map (std_logic_vector(seed0)) port map (clk, rng0);
     lfsr1 : entity work.lfsr_random generic map (std_logic_vector(seed1)) port map (clk, rng1);
+
+    action_rams_ren <= state_valid or axis_read;    
+    action_rams_ra <= next_state when axis_read = '0' else axis_pointer;
 
     gen_qtables : for i in 0 to action_num-1 generate
         u0 : entity work.simple_bram 
@@ -88,13 +98,19 @@ begin
         port map (
             clk => clk,
             wen => awen(i),
-            ren => state_valid,
+            ren => action_rams_ren,
             waddr => last_state,
-            raddr => next_state,
+            raddr => action_rams_ra,
             dout => r_avalue(i),
             din => w_avalue(i)
         );
     end generate gen_qtables;
+    
+    axis_out : process (r_avalue) begin
+        for i in 0 to action_num-1 loop
+            axis_data(((i+1)*reward_width-1) downto (i*reward_width)) <= r_avalue(i);
+        end loop;
+    end process;
 
     pmax : process (r_avalue, maxvalue, maxidx) 
         variable temps : leveltemps;
@@ -132,7 +148,7 @@ begin
     
     end process;
     
-    qlearning_update : process (r_avalue, next_state, state_valid, last_reward, reward_valid, last_action, last_value, last_state, maxvalue, maxidx, rng0, rng1) 
+    qlearning_update : process (enable, r_avalue, next_state, state_valid, last_reward, reward_valid, last_action, last_value, last_state, maxvalue, maxidx, rng0, rng1, gamma, alpha) 
     begin
         awen <= (others => '0');
         w_avalue <= (others => (others => '0'));
@@ -164,10 +180,9 @@ begin
                 last_state <= state;
                 last_reward <= reward;
                 ready <= '1';
-                
-                alpha <= to_integer(unsigned(alpha_in));
-                gamma <= to_integer(unsigned(gamma_in));
             end if;
+            alpha <= to_integer(unsigned(alpha_in));
+            gamma <= to_integer(unsigned(gamma_in));
         end if;
     end process;
     
