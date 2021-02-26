@@ -10,6 +10,8 @@ Q-Learning Accelerator with AXI Interface
 | States | LUTs | FFs | BRAM | DSPs | Frequency |
 | ------ | ------ | ------ | ------ | ------ | ------ |
 | 16 | 423 | 415 | 0 | 0 | 166MHz |
+| 64 | 429 | 419 | 0 | 0 | 166MHz |
+
 
 ## TODO
 
