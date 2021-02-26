@@ -148,16 +148,16 @@ begin
     
     end process;
     
-    qlearning_update : process (enable, r_avalue, next_state, state_valid, last_reward, reward_valid, last_action, last_value, last_state, maxvalue, maxidx, rng0, rng1, gamma, alpha) 
-    begin
+    qlearning_update : process (enable, last_action, last_value, last_reward, maxvalue, reward_valid) begin      
         awen <= (others => '0');
         w_avalue <= (others => (others => '0'));
-        this_value <= last_value;
-        this_action <= last_action;
-        
-        -- compute update
         w_avalue(to_integer(unsigned(last_action))) <= std_logic_vector(signed(last_value) + signed(shift_right(signed(last_reward) + signed(shift_right(signed(maxvalue), gamma)) - signed(last_value), alpha)));
         awen(to_integer(unsigned(last_action))) <= reward_valid and enable;
+    end process;
+    
+    actor : process (enable, last_value, last_action, rng0, rng1, r_avalue, maxidx, maxvalue) begin
+        this_value <= last_value;
+        this_action <= last_action;
         
         if unsigned(rng0(7 downto 0)) < epsilon then
             this_action <= rng1(action_width-1 downto 0);
@@ -167,6 +167,27 @@ begin
             this_value <= std_logic_vector(maxvalue);
         end if;
     end process;
+    
+    
+--    qlearning_update_old : process (enable, r_avalue, next_state, state_valid, last_reward, reward_valid, last_action, last_value, last_state, maxvalue, maxidx, rng0, rng1, gamma, alpha) 
+--    begin
+--        awen <= (others => '0');
+--        w_avalue <= (others => (others => '0'));
+--        this_value <= last_value;
+--        this_action <= last_action;
+        
+--        -- compute update
+--        w_avalue(to_integer(unsigned(last_action))) <= std_logic_vector(signed(last_value) + signed(shift_right(signed(last_reward) + signed(shift_right(signed(maxvalue), gamma)) - signed(last_value), alpha)));
+--        awen(to_integer(unsigned(last_action))) <= reward_valid and enable;
+        
+--        if unsigned(rng0(7 downto 0)) < epsilon then
+--            this_action <= rng1(action_width-1 downto 0);
+--            this_value <= r_avalue(to_integer(unsigned(rng1(action_width-1 downto 0))));
+--        else
+--            this_action <= maxidx;
+--            this_value <= std_logic_vector(maxvalue);
+--        end if;
+--    end process;
     
     registers : process (clk) 
     begin

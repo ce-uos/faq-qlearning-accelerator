@@ -10,8 +10,6 @@ entity qlearning_system is
   Port ( 
     clk : in std_logic;
     enable : in std_logic;
-    state_out : out std_logic_vector(env_state_width-1 downto 0);
-    action_out : out std_logic_vector(env_action_width-1 downto 0);
     
     alpha_in : in std_logic_vector(31 downto 0);
     alpha_out : out std_logic_vector(31 downto 0);
@@ -79,8 +77,6 @@ env : entity work.environment port map (
     reward_valid => reward_valid
 );
 
-action_out <= action;
-state_out <= state;
 episodes <= counter;
 
 process (clk) begin

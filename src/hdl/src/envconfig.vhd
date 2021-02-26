@@ -1,16 +1,18 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
+use IEEE.MATH_REAL.ALL;
 
 package envconfig is
-    constant env_memsize : integer := 64;
     constant env_state_width : integer := 4;
-    constant env_state_num : integer := 16;
+    constant env_state_num : integer := 2**env_state_width;
     constant env_action_width : integer := 2;
-    constant env_addr_width : integer := 6;
+    constant env_addr_width : integer := env_action_width + env_state_width;
     constant env_reward_width : integer := 16;
-    constant env_action_num : integer := 4;
-    
+    constant env_action_num : integer := 2**env_action_width;
+    constant env_memsize : integer := env_action_num * env_state_num;
+    constant rowcol : integer := 4;
+
     type transition_mem_type is array(0 to env_memsize-1) of std_logic_vector(env_state_width-1 downto 0);
     type reward_mem_type is array(0 to env_memsize-1) of std_logic_vector(env_reward_width-1 downto 0);
     
