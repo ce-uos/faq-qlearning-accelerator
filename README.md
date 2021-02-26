@@ -12,6 +12,11 @@ Q-Learning Accelerator with AXI Interface
 | 16 | 423 | 415 | 0 | 0 | 166MHz |
 | 64 | 429 | 419 | 0 | 0 | 166MHz |
 
+### Comparison
+
+Spano with 16 States, 4 Actions and 16 Bit Rewards: 152MHz
+
+QTAccel with 64 States, 4 Actions: 189 MHz 
 
 ## TODO
 
