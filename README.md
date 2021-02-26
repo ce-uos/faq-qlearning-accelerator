@@ -12,6 +12,7 @@ Q-Learning Accelerator with AXI Interface
 | 16 | 423 | 415 | 0 | 0 | 166MHz |
 | 64 | 429 | 419 | 0 | 0 | 166MHz |
 | 256 | 444 | 423 | 0 | 0 | 155MHz |
+| 1024 | 460 | 427 | 0 | 0 | 155MHz |
 
 ### Comparison
 
