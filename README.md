@@ -5,7 +5,7 @@ Q-Learning Accelerator with AXI Interface
 
 ## Evaluation
 
-4 Actions, 16 Bit Rewards
+4 Actions, 16 Bit Rewards, single stage
 
 | States | LUTs | FFs | BRAM | DSPs | Frequency |
 | ------ | ------ | ------ | ------ | ------ | ------ |
@@ -13,6 +13,14 @@ Q-Learning Accelerator with AXI Interface
 | 64 | 429 | 419 | 0 | 0 | 166MHz |
 | 256 | 444 | 423 | 0 | 0 | 166MHz |
 | 1024 | 460 | 427 | 0 | 0 | 166MHz |
+
+
+4 Actions, 16 Bit Rewards, 2 pipeline stages
+
+| States | LUTs | FFs | BRAM | DSPs | Frequency |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| 16 | 411 | 456 | 0 | 0 | 200-230MHz |
+
 
 ### Comparison
 
