@@ -75,11 +75,18 @@ architecture Behavioral of qlearning is
     type leveltemps is array(0 to MAX_LEVELS) of value_array;
     signal maxdbg : leveltemps;
     signal maxidxdbg : leveltemps;
-    
-    signal ready : std_logic := '0';
-    
+        
     signal action_rams_ren : std_logic;
     signal action_rams_ra : std_logic_vector(state_width-1 downto 0);
+    
+    signal last_reward_valid : std_logic := '0';
+    
+    signal s1_last_reward_valid : std_logic := '0';
+    signal s1_last_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
+    signal s1_last_value : std_logic_vector(reward_width-1 downto 0) := (others => '0');
+    signal s1_last_reward : std_logic_vector(reward_width-1 downto 0);
+    signal s1_maxvalue : std_logic_vector(reward_width-1 downto 0);
+    signal s1_last_state : std_logic_vector(state_width-1 downto 0);
 begin
 
     lfsr0 : entity work.lfsr_random generic map (std_logic_vector(seed0)) port map (clk, rng0);
@@ -99,7 +106,7 @@ begin
             clk => clk,
             wen => awen(i),
             ren => action_rams_ren,
-            waddr => last_state,
+            waddr => s1_last_state,
             raddr => action_rams_ra,
             dout => r_avalue(i),
             din => w_avalue(i)
@@ -148,11 +155,22 @@ begin
     
     end process;
     
-    qlearning_update : process (enable, last_action, last_value, last_reward, maxvalue, reward_valid) begin      
+    pipeline_registers : process (clk) begin
+        if rising_edge(clk) then
+            s1_last_reward_valid <= last_reward_valid;
+            s1_last_action <= last_action;
+            s1_last_value <= last_value;
+            s1_last_reward <= last_reward;
+            s1_maxvalue <= maxvalue;
+            s1_last_state <= last_state;
+        end if;
+    end process;    
+    
+    qlearning_update : process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_maxvalue, s1_last_reward_valid, alpha, gamma) begin      
         awen <= (others => '0');
         w_avalue <= (others => (others => '0'));
-        w_avalue(to_integer(unsigned(last_action))) <= std_logic_vector(signed(last_value) + signed(shift_right(signed(last_reward) + signed(shift_right(signed(maxvalue), gamma)) - signed(last_value), alpha)));
-        awen(to_integer(unsigned(last_action))) <= reward_valid and enable;
+        w_avalue(to_integer(unsigned(s1_last_action))) <= std_logic_vector(signed(s1_last_value) + signed(shift_right(signed(s1_last_reward) + signed(shift_right(signed(s1_maxvalue), gamma)) - signed(s1_last_value), alpha)));
+        awen(to_integer(unsigned(s1_last_action))) <= s1_last_reward_valid and enable;
     end process;
     
     actor : process (enable, last_value, last_action, rng0, rng1, r_avalue, maxidx, maxvalue) begin
@@ -200,7 +218,7 @@ begin
                 state <= next_state;
                 last_state <= state;
                 last_reward <= reward;
-                ready <= '1';
+                last_reward_valid <= reward_valid;
             end if;
             alpha <= to_integer(unsigned(alpha_in));
             gamma <= to_integer(unsigned(gamma_in));
