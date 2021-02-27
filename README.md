@@ -19,9 +19,15 @@ Q-Learning Accelerator with AXI Interface
 
 | States | LUTs | FFs | BRAM | DSPs | Frequency |
 | ------ | ------ | ------ | ------ | ------ | ------ |
-| 16 | 411 | 456 | 0 | 0 | 235MHz+ |
+| 16 | 411 | 456 | 0 | 0 | 235MHz+ (possibly up to 250Hz)|
 | 64 | 417 | 460 | 0 | 0 | 235MHz+ |
 | 1024 | 451 | 468 | 0 | 0 | 235MHz+ |
+
+4 Actions, 16 Bit Rewards, 3 pipeline stages
+
+| States | LUTs | FFs | BRAM | DSPs | Frequency |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| 16 | 411 | 456 | 0 | 0 | 300MHz (possibly up to 340MHz)|
 
 ### Comparison
 
