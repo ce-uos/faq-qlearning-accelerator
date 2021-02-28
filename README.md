@@ -2,8 +2,15 @@
 
 Q-Learning Accelerator with AXI Interface
 
+## Evaltuation
 
-## Evaluation
+4 Actions, 16 Bit Rewards, 3 pipeline stages
+
+| States | LUTs | FFs | BRAM | DSPs | Frequency |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| 16 | 360 | 440 | 0 | 2 | 222MHz |
+
+## Old Evaluation
 
 4 Actions, 16 Bit Rewards, single stage
 
