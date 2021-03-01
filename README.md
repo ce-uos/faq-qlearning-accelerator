@@ -4,6 +4,13 @@ Q-Learning Accelerator with AXI Interface
 
 ## Evaluation
 
+4 Actions, 16 Bit Rewards, 1 pipeline stage
+
+| States | LUTs | FFs | BRAM | DSPs | Frequency |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| 16 | 360 | 351 | 2 | 0 | 141MHz |
+
+
 4 Actions, 16 Bit Rewards, 3 pipeline stages
 
 | States | LUTs | FFs | BRAM | DSPs | Frequency |
@@ -50,12 +57,11 @@ QTAccel with 64 States, 4 Actions: 189 MHz
 
 ### Important
 
-
-1. Pipelining
-2. Evaluation
-3. Paper
+1. 8 actions
+2. configurable pipelining
+3. Evaluation
+4. Paper
 
 ### Optional
 
-1. Writable Transition- and Reward-Tables
-2. Max Episodes AXI Register (e.g. for comparison to C implementation)
+1. Max Episodes AXI Register (e.g. for comparison to C implementation)
