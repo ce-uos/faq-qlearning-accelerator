@@ -25,17 +25,25 @@ Q-Learning Accelerator with AXI Interface
 | 16 | 359 | 447 | 2 | 0 | 232MHz |
 | 262144 | 445 | 475 | 2 | 0 | 211MHz |
 
+8 Actions, 16 Bit Rewards, 3 pipeline stages
+
+| States | LUTs | FFs | BRAM | DSPs | Frequency |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| 16 | 515 | 451 | 4 | 0 | 167MHz |
+
 ### Comparison
 
 Spano with 16 States, 4 Actions and 16 Bit Rewards: 152MHz
 
 QTAccel with 64 States, 4 Actions: 189 MHz 
 
+QTAccel with 64 States, 8 Actions: 189 MHz 
+
 ## TODO
 
 ### Important
 
-1. 8 actions
+1. Qmax Table?
 2. Evaluation
 3. Paper
 
