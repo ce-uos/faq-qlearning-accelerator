@@ -22,43 +22,109 @@ architecture Behavioral of blockworld_environment is
     signal next_state : std_logic_vector(env_state_width-1 downto 0) := (others => '0');    
 begin
 
-    next_state_process : process (action, action_valid, state) begin
-        next_state <= state;
-        if action_valid = '1' then
-            if state = targetstate then
-                next_state <= (others => '0');
-            else
-                case (action) is
-                    when b"00" => -- up action
-                        if unsigned(state) < to_unsigned(env_rowcol, env_state_width) then
+    gen_next_state_process4 : if env_action_num = 4 generate
+        next_state_process : process (action, action_valid, state) begin
+            next_state <= state;
+            if action_valid = '1' then
+                if state = targetstate then
+                    next_state <= (others => '0');
+                else
+                    case (action) is
+                        when b"00" => -- up action
+                            if unsigned(state) < to_unsigned(env_rowcol, env_state_width) then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) - to_unsigned(env_rowcol, env_state_width));
+                            end if;
+                        when b"01" => -- right action
+                            if (to_integer(unsigned(state)) + 1) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) + 1);
+                            end if;
+                        when b"10" => -- down action
+                            if unsigned(state) >= to_unsigned(env_rowcol * (env_rowcol -1), env_state_width) then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) + to_unsigned(env_rowcol, env_state_width));
+                            end if;
+                        when b"11" => -- left action
+                            if to_integer(unsigned(state)) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) - 1);
+                            end if;
+                        when others =>
                             next_state <= state;
-                        else
-                            next_state <= std_logic_vector(unsigned(state) - to_unsigned(env_rowcol, env_state_width));
-                        end if;
-                    when b"01" => -- right action
-                        if (to_integer(unsigned(state)) + 1) mod env_rowcol = 0 then
-                            next_state <= state;
-                        else
-                            next_state <= std_logic_vector(unsigned(state) + 1);
-                        end if;
-                    when b"10" => -- down action
-                        if unsigned(state) >= to_unsigned(env_rowcol * (env_rowcol -1), env_state_width) then
-                            next_state <= state;
-                        else
-                            next_state <= std_logic_vector(unsigned(state) + to_unsigned(env_rowcol, env_state_width));
-                        end if;
-                    when b"11" => -- left action
-                        if to_integer(unsigned(state)) mod env_rowcol = 0 then
-                            next_state <= state;
-                        else
-                            next_state <= std_logic_vector(unsigned(state) - 1);
-                        end if;
-                    when others =>
-                        next_state <= state;
-                end case;
+                    end case;
+                end if;
             end if;
-        end if;
-    end process;
+        end process;
+    end generate;
+    
+    gen_next_state_process8 : if env_action_num = 8 generate
+        next_state_process : process (action, action_valid, state) begin
+            next_state <= state;
+            if action_valid = '1' then
+                if state = targetstate then
+                    next_state <= (others => '0');
+                else
+                    case (action) is
+                        when b"000" => -- up action
+                            if unsigned(state) < to_unsigned(env_rowcol, env_state_width) then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) - to_unsigned(env_rowcol, env_state_width));
+                            end if;
+                        when b"001" => -- right action
+                            if (to_integer(unsigned(state)) + 1) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) + 1);
+                            end if;
+                        when b"010" => -- down action
+                            if unsigned(state) >= to_unsigned(env_rowcol * (env_rowcol -1), env_state_width) then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) + to_unsigned(env_rowcol, env_state_width));
+                            end if;
+                        when b"011" => -- left action
+                            if to_integer(unsigned(state)) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) - 1);
+                            end if;
+                        when b"100" => -- up-right action
+                            if unsigned(state) < to_unsigned(env_rowcol, env_state_width) or (to_integer(unsigned(state)) + 1) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) - to_unsigned(env_rowcol, env_state_width) + 1);
+                            end if;
+                        when b"101" => -- down-right action
+                            if unsigned(state) >= to_unsigned(env_rowcol * (env_rowcol -1), env_state_width) or (to_integer(unsigned(state)) + 1) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) + to_unsigned(env_rowcol, env_state_width) + 1);
+                            end if;
+                        when b"110" => -- down-left action
+                            if unsigned(state) >= to_unsigned(env_rowcol * (env_rowcol -1), env_state_width) or to_integer(unsigned(state)) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) + to_unsigned(env_rowcol, env_state_width) - 1);
+                            end if;
+                        when b"111" => -- up-left action
+                            if unsigned(state) < to_unsigned(env_rowcol, env_state_width) or to_integer(unsigned(state)) mod env_rowcol = 0 then
+                                next_state <= state;
+                            else
+                                next_state <= std_logic_vector(unsigned(state) - to_unsigned(env_rowcol, env_state_width) - 1);
+                            end if;
+                        when others =>
+                            next_state <= state;
+                    end case;
+                end if;
+            end if;
+        end process;
+    end generate;
     
     reward_process : process (state) begin
         if state = targetstate then
