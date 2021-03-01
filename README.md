@@ -36,9 +36,8 @@ QTAccel with 64 States, 4 Actions: 189 MHz
 ### Important
 
 1. 8 actions
-2. configurable pipelining
-3. Evaluation
-4. Paper
+2. Evaluation
+3. Paper
 
 ### Optional
 
