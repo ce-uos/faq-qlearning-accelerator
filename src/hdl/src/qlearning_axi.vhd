@@ -12,7 +12,7 @@ generic (
         -- Width of S_AXI address bus
         C_S_AXI_ADDR_WIDTH	: integer	:= 32;
         
-        C_M_AXIS_TDATA_WIDTH	: integer	:= 128
+        C_M_AXIS_TDATA_WIDTH	: integer	:= 64
     );
 port (
         clk : in std_logic;
