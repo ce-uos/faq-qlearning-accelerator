@@ -51,7 +51,7 @@ QTAccel with 64 States, 8 Actions: 189 MHz
 
 ### Important
 
-1. Qmax Table?
+1. SARSA
 2. Evaluation
 3. Paper
 
