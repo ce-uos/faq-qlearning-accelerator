@@ -1,5 +1,3 @@
-
-
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -44,7 +42,8 @@ generic map (
     state_width => env_state_width,
     reward_width => env_reward_width,
     action_width => env_action_width,
-    action_num => env_action_num
+    action_num => env_action_num,
+    pipeline_stages => env_pipeline_stages
 )
 port map (
     clk => clk,
@@ -66,7 +65,7 @@ port map (
     axis_data => axis_data
 );
 
-env : entity work.environment port map (
+env : entity work.blockworld_environment port map (
     clk => clk,
     enable => enable,
     action => action,

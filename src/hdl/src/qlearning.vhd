@@ -14,7 +14,8 @@ entity qlearning is
     state_num : integer := 16;
     repsilon : integer := 80;
     rseed0 : integer := 12341;
-    rseed1 : integer := 21314
+    rseed1 : integer := 21314;
+    pipeline_stages : integer := 3
   );
   Port ( 
     clk : in std_logic;
@@ -97,6 +98,8 @@ architecture Behavioral of qlearning is
     signal s2_last_reward_valid : std_logic := '0';
     signal s2_last_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
     signal s2_last_value : std_logic_vector(reward_width-1 downto 0) := (others => '0');
+    
+    signal action_rams_wa : std_logic_vector(state_width-1 downto 0);
 begin
 
     lfsr0 : entity work.lfsr_random generic map (std_logic_vector(seed0)) port map (clk, rng0);
@@ -116,7 +119,7 @@ begin
             clk => clk,
             wen => awen(i),
             ren => action_rams_ren,
-            waddr => s2_last_state,
+            waddr => action_rams_wa,
             raddr => action_rams_ra,
             dout => r_avalue(i),
             din => w_avalue(i)
@@ -165,44 +168,74 @@ begin
     
     end process;
     
-    pipeline_registers : process (clk) begin
-        if rising_edge(clk) then
-            s1_last_reward_valid <= last_reward_valid;
-            s1_last_action <= last_action;
-            s1_last_value <= last_value;
-            s1_last_reward <= last_reward;
-            s1_maxvalue <= maxvalue;
-            s1_last_state <= last_state;
+       
+    
+    single_stage_gen : if pipeline_stages = 1 generate
+        action_rams_wa <= last_state;
+        qlearning_update_one : process (enable, r_avalue, next_state, state_valid, last_reward, reward_valid, last_action, last_value, last_state, maxvalue, maxidx, rng0, rng1, gamma, alpha) 
+        begin
+            awen <= (others => '0');
+            w_avalue <= (others => (others => '0'));
+            w_avalue(to_integer(unsigned(last_action))) <= std_logic_vector(signed(last_value) + signed(shift_right(signed(last_reward) + signed(shift_right(signed(maxvalue), gamma)) - signed(last_value), alpha)));
+            awen(to_integer(unsigned(last_action))) <= reward_valid and enable;
+        end process;
+    end generate;
+    
+    two_stage_gen : if pipeline_stages = 2 generate
+        action_rams_wa <= s1_last_state;
+        qlearning_update_two : process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_maxvalue, s1_last_reward_valid, alpha, gamma) begin      
+            awen <= (others => '0');
+            w_avalue <= (others => (others => '0'));
+            w_avalue(to_integer(unsigned(s1_last_action))) <= std_logic_vector(signed(s1_last_value) + signed(shift_right(signed(s1_last_reward) + signed(shift_right(signed(s1_maxvalue), gamma)) - signed(s1_last_value), alpha)));
+            awen(to_integer(unsigned(s1_last_action))) <= s1_last_reward_valid and enable;
+        end process;
+        
+        pipeline_registers : process (clk) begin
+            if rising_edge(clk) then
+                s1_last_reward_valid <= last_reward_valid;
+                s1_last_action <= last_action;
+                s1_last_value <= last_value;
+                s1_last_reward <= last_reward;
+                s1_maxvalue <= maxvalue;
+                s1_last_state <= last_state;
+            end if;
+        end process; 
+    end generate;
+    
+    three_stage_gen : if pipeline_stages = 3 generate
+        action_rams_wa <= s2_last_state;
+        qlearning_update_three : process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_maxvalue, s1_last_reward_valid, alpha, gamma,
+                                    s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid) begin      
+            awen <= (others => '0');
+            w_avalue <= (others => (others => '0'));
             
-            s2_last_reward_valid <= s1_last_reward_valid;
-            s2_last_action <= s1_last_action;
-            s2_last_state <= last_state;
-            s2_rsubv <= rsubv;
-            s2_maxvshifted <= maxvshifted;
-            s2_last_value <= s1_last_value;
-        end if;
-    end process;    
-    
---    qlearning_update : process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_maxvalue, s1_last_reward_valid, alpha, gamma) begin      
---        awen <= (others => '0');
---        w_avalue <= (others => (others => '0'));
---        w_avalue(to_integer(unsigned(s1_last_action))) <= std_logic_vector(signed(s1_last_value) + signed(shift_right(signed(s1_last_reward) + signed(shift_right(signed(s1_maxvalue), gamma)) - signed(s1_last_value), alpha)));
---        awen(to_integer(unsigned(s1_last_action))) <= s1_last_reward_valid and enable;
---    end process;
-    
-    qlearning_update : process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_maxvalue, s1_last_reward_valid, alpha, gamma,
-                                s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid) begin      
-        awen <= (others => '0');
-        w_avalue <= (others => (others => '0'));
+            -- pipeline stage 1
+            rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
+            maxvshifted <= std_logic_vector(shift_right(signed(s1_maxvalue), gamma));
+            
+            -- pipeline stage 2
+            w_avalue(to_integer(unsigned(s2_last_action))) <= std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_rsubv) + signed(s2_maxvshifted), alpha)));
+            awen(to_integer(unsigned(s2_last_action))) <= s2_last_reward_valid and enable;
+        end process;
         
-        -- pipeline stage 1
-        rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
-        maxvshifted <= std_logic_vector(shift_right(signed(s1_maxvalue), gamma));
-        
-        -- pipeline stage 2
-        w_avalue(to_integer(unsigned(s2_last_action))) <= std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_rsubv) + signed(s2_maxvshifted), alpha)));
-        awen(to_integer(unsigned(s2_last_action))) <= s2_last_reward_valid and enable;
-    end process;
+        pipeline_registers : process (clk) begin
+            if rising_edge(clk) then
+                s1_last_reward_valid <= last_reward_valid;
+                s1_last_action <= last_action;
+                s1_last_value <= last_value;
+                s1_last_reward <= last_reward;
+                s1_maxvalue <= maxvalue;
+                s1_last_state <= last_state;
+                
+                s2_last_reward_valid <= s1_last_reward_valid;
+                s2_last_action <= s1_last_action;
+                s2_last_state <= s1_last_state;
+                s2_rsubv <= rsubv;
+                s2_maxvshifted <= maxvshifted;
+                s2_last_value <= s1_last_value;
+            end if;
+        end process; 
+    end generate;
     
     actor : process (enable, last_value, last_action, rng0, rng1, r_avalue, maxidx, maxvalue) begin
         this_value <= last_value;
@@ -216,27 +249,6 @@ begin
             this_value <= std_logic_vector(maxvalue);
         end if;
     end process;
-    
-    
---    qlearning_update_old : process (enable, r_avalue, next_state, state_valid, last_reward, reward_valid, last_action, last_value, last_state, maxvalue, maxidx, rng0, rng1, gamma, alpha) 
---    begin
---        awen <= (others => '0');
---        w_avalue <= (others => (others => '0'));
---        this_value <= last_value;
---        this_action <= last_action;
-        
---        -- compute update
---        w_avalue(to_integer(unsigned(last_action))) <= std_logic_vector(signed(last_value) + signed(shift_right(signed(last_reward) + signed(shift_right(signed(maxvalue), gamma)) - signed(last_value), alpha)));
---        awen(to_integer(unsigned(last_action))) <= reward_valid and enable;
-        
---        if unsigned(rng0(7 downto 0)) < epsilon then
---            this_action <= rng1(action_width-1 downto 0);
---            this_value <= r_avalue(to_integer(unsigned(rng1(action_width-1 downto 0))));
---        else
---            this_action <= maxidx;
---            this_value <= std_logic_vector(maxvalue);
---        end if;
---    end process;
     
     registers : process (clk) 
     begin

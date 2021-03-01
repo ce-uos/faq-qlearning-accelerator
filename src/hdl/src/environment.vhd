@@ -25,7 +25,7 @@ begin
 
     transition_ram : entity work.transition_bram 
     generic map (
-        init => INIT_TRANSITION_RAM(rowcol,rowcol)
+        init => INIT_TRANSITION_RAM(env_rowcol,env_rowcol)
     ) 
     port map (
         clk => clk,
@@ -36,7 +36,7 @@ begin
     
     reward_ram : entity work.reward_bram 
     generic map (
-        init => INIT_REWARD_RAM(rowcol,rowcol)
+        init => INIT_REWARD_RAM(env_rowcol,env_rowcol)
     ) 
     port map (
         clk => clk,

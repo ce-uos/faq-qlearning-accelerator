@@ -22,6 +22,8 @@ end simple_bram;
 architecture Behavioral of simple_bram is
     type mem_type is array(0 to memsize-1) of std_logic_vector(data_width-1 downto 0);
     signal mem : mem_type := (others => (others => '0'));
+    attribute ram_style : string;
+    attribute ram_style of mem : signal is "block";
 begin
 
     process (clk) begin

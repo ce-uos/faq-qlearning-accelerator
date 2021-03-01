@@ -122,6 +122,7 @@ set files [list \
  [file normalize "${base_dir}/src/hdl/src/qlearning.vhd" ]\
  [file normalize "${base_dir}/src/hdl/src/qlearning_system.vhd" ]\
  [file normalize "${base_dir}/src/hdl/src/qlearning_axi.vhd" ]\
+ [file normalize "${base_dir}/src/hdl/src/blockworld_environment.vhd" ]\
 ]
 set added_files [add_files -fileset sources_1 $files]
 
@@ -171,6 +172,10 @@ set file "src/qlearning_axi.vhd"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
+set file "src/blockworld_environment.vhd"
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "VHDL" -objects $file_obj
+
 # Set 'sources_1' fileset properties
 #set obj [get_filesets sources_1]
 #set_property -name "top" -value "design_1_wrapper" -objects $obj
@@ -201,6 +206,8 @@ set files [list \
  [file normalize "${base_dir}/src/hdl/sim/qlearning_system_tb.vhd" ]\
  [file normalize "${base_dir}/src/hdl/sim/qlearning_tb.vhd" ]\
  [file normalize "${base_dir}/src/hdl/sim/environment_tb.vhd" ]\
+ [file normalize "${base_dir}/src/hdl/sim/blockworld_tb.vhd" ]\
+ [file normalize "${base_dir}/src/hdl/sim/qlearning_axi_tb.vhd" ]\
 ]
 set added_files [add_files -fileset sim_1 $files]
 
@@ -217,6 +224,14 @@ set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
 set file "sim/environment_tb.vhd"
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "VHDL" -objects $file_obj
+
+set file "sim/blockworld_tb.vhd"
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "VHDL" -objects $file_obj
+
+set file "sim/qlearning_axi_tb.vhd"
 set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
 set_property -name "file_type" -value "VHDL" -objects $file_obj
 
