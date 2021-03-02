@@ -4,7 +4,7 @@ use IEEE.NUMERIC_STD.ALL;
 use IEEE.MATH_REAL.ALL;
 
 package envconfig is
-    constant env_state_width : integer := 18;
+    constant env_state_width : integer := 4;
     constant env_state_num : integer := 2**env_state_width;
     constant env_action_width : integer := 2;
     constant env_addr_width : integer := env_action_width + env_state_width;
