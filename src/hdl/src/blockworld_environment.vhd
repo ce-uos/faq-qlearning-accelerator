@@ -65,7 +65,7 @@ begin
     gen_next_state_process8 : if env_action_num = 8 generate
         next_state_process : process (action, action_valid, state) begin
             next_state <= state;
-            if action_valid = '1' then
+--            if action_valid = '1' then
                 if state = targetstate then
                     next_state <= (others => '0');
                 else
@@ -122,7 +122,7 @@ begin
                             next_state <= state;
                     end case;
                 end if;
-            end if;
+--            end if;
         end process;
     end generate;
     
@@ -139,10 +139,10 @@ begin
 
     process (clk) begin
         if rising_edge(clk) then
-            if enable = '1' then
+--            if enable = '1' then
                 reward_valid <= action_valid;
                 state <= next_state;
-            end if;
+--            end if;
         end if;
     end process;
     
