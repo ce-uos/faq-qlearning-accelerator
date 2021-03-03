@@ -25,7 +25,7 @@ begin
     gen_next_state_process4 : if env_action_num = 4 generate
         next_state_process : process (action, action_valid, state) begin
             next_state <= state;
-            if action_valid = '1' then
+--            if action_valid = '1' then
                 if state = targetstate then
                     next_state <= (others => '0');
                 else
@@ -58,7 +58,7 @@ begin
                             next_state <= state;
                     end case;
                 end if;
-            end if;
+--            end if;
         end process;
     end generate;
     

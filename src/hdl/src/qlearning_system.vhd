@@ -9,7 +9,8 @@ entity qlearning_system is
     clk : in std_logic;
     enable : in std_logic;
     
-    state_out : out std_logic_vector(env_state_width-1 downto 0)
+    state_out : out std_logic_vector(env_state_width-1 downto 0);
+    value_out : out std_logic_vector(env_reward_width-1 downto 0)
     
   );
 end qlearning_system;
@@ -19,6 +20,7 @@ architecture Behavioral of qlearning_system is
     signal state : std_logic_vector(env_state_width-1 downto 0);
     signal reward : std_logic_vector(env_reward_width-1 downto 0);
     signal action : std_logic_vector(env_action_width-1 downto 0);
+    signal value : std_logic_vector(env_reward_width-1 downto 0);
     
     signal state_valid : std_logic;
     signal reward_valid : std_logic;
@@ -38,6 +40,7 @@ generic map (
 port map (
     clk => clk,
     enable => enable,
+    value_out => value,
     next_state => state,
     state_valid => state_valid,
     reward => reward,
@@ -58,5 +61,6 @@ env : entity work.blockworld_environment port map (
 );
 
 state_out <= state;
+value_out <= value;
 
 end Behavioral;

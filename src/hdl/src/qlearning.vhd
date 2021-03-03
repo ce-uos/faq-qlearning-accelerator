@@ -21,6 +21,8 @@ entity qlearning is
     clk : in std_logic;
     enable : in std_logic;
     
+    value_out : out std_logic_vector(reward_width-1 downto 0);
+    
     next_state : in std_logic_vector(state_width-1 downto 0);
     state_valid : in std_logic;
     reward : in std_logic_vector(reward_width-1 downto 0);
@@ -104,6 +106,15 @@ architecture Behavioral of qlearning is
     
     signal last_qmax_value : std_logic_vector(reward_width-1 downto 0);
     signal last_qmax_action : std_logic_vector(action_width-1 downto 0);
+    
+    signal qtable_write : std_logic;
+    signal qtable_ra : std_logic_vector(state_width+action_width-1 downto 0);
+    signal qtable_wa : std_logic_vector(state_width+action_width-1 downto 0);
+    signal qvalue : std_logic_vector(reward_width-1 downto 0);
+    signal new_qvalue : std_logic_vector(reward_width-1 downto 0);
+    signal next_random_action : std_logic_vector(action_width-1 downto 0);
+    signal random_action : std_logic_vector(action_width-1 downto 0);
+    signal last_random_action : std_logic_vector(action_width-1 downto 0);
 begin
 
     
@@ -111,23 +122,42 @@ begin
     lfsr0 : entity work.lfsr_random generic map (std_logic_vector(seed0)) port map (clk, rng0);
     lfsr1 : entity work.lfsr_random generic map (std_logic_vector(seed1)) port map (clk, rng1);
 
-    gen_qtables : for i in 0 to action_num-1 generate
-        u0 : entity work.simple_bram 
-        generic map (
-            memsize => state_num,
-            addr_width => state_width,
-            data_width => reward_width
-        )
-        port map (
-            clk => clk,
-            wen => awen(i),
-            ren => state_valid,
-            waddr => last_state,
-            raddr => next_state,
-            dout => r_avalue(i),
-            din => w_avalue(i)
-        );
-    end generate gen_qtables;
+--    gen_qtables : for i in 0 to action_num-1 generate
+--        u0 : entity work.simple_bram 
+--        generic map (
+--            memsize => state_num,
+--            addr_width => state_width,
+--            data_width => reward_width
+--        )
+--        port map (
+--            clk => clk,
+--            wen => awen(i),
+--            ren => state_valid,
+--            waddr => last_state,
+--            raddr => next_state,
+--            dout => r_avalue(i),
+--            din => w_avalue(i)
+--        );
+--    end generate gen_qtables;
+    
+    qtable_ra <= next_state & next_random_action;
+    qtable_wa <= s2_last_state & s2_last_action;
+    
+    qtable : entity work.simple_bram 
+    generic map (
+        memsize => state_num * action_num,
+        addr_width => state_width + action_width,
+        data_width => reward_width
+    )
+    port map (
+        clk => clk,
+        wen => qtable_write,
+        ren => '1',
+        waddr => qtable_wa,
+        raddr => qtable_ra,
+        dout => qvalue,
+        din => new_qvalue
+    );
     
     qmax_write <= new_qmax_action & new_qmax;
     qmax_value <= next_qmax_read(reward_width-1 downto 0);
@@ -214,7 +244,7 @@ begin
             new_qmax <= (others => '0');
             new_qmax_action <= (others => '0');
             awen <= (others => '0');
-            w_avalue <= (others => (others => '0'));
+            new_qvalue <= (others => '0');
             
             -- pipeline stage 1
             rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
@@ -222,8 +252,8 @@ begin
             
             -- pipeline stage 2
             newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_rsubv) + signed(s2_maxvshifted), alpha)));
-            w_avalue(to_integer(unsigned(s2_last_action))) <= newval;
-            awen(to_integer(unsigned(s2_last_action))) <= s2_last_reward_valid and enable;
+            new_qvalue <= newval;
+            qtable_write <= s2_last_reward_valid and enable;
             
             if unsigned(newval) > unsigned(s2_last_qmax_value) then
                 qmax_update <= '1';
@@ -315,13 +345,15 @@ begin
         this_value <= last_value;
         this_action <= last_action;
         
-        if unsigned(rng0(7 downto 0)) < epsilon then
-            this_action <= rng1(action_width-1 downto 0);
-            this_value <= r_avalue(to_integer(unsigned(rng1(action_width-1 downto 0))));
-        else
-            this_action <= qmax_action;
-            this_value <= qmax_value;
-        end if;
+        next_random_action <= rng1(action_width-1 downto 0);
+        
+--        if unsigned(rng0(7 downto 0)) < epsilon then
+            this_action <= random_action;
+            this_value <= qvalue;
+--        else
+--            this_action <= qmax_action;
+--            this_value <= qmax_value;
+--        end if;
     end process;
     
     registers : process (clk) 
@@ -338,11 +370,13 @@ begin
                 last_reward_valid <= reward_valid;
                 last_qmax_value <= qmax_value;
                 last_qmax_action <= qmax_action;
+                random_action <= next_random_action;
             end if;
         end if;
     end process;
     
     action <= this_action;
     action_valid <= this_action_valid;
+    value_out <= this_value;
 
 end Behavioral;

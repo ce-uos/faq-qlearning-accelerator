@@ -43,16 +43,18 @@ end qlearning_virtex;
 architecture Behavioral of qlearning_virtex is
 
     signal state : std_logic_vector(env_state_width-1 downto 0);
+    signal value : std_logic_vector(env_reward_width-1 downto 0);
 
 begin
 
 qlearnings_sys : entity work.qlearning_system port map (
     clk => clk,
     enable => '1',
-    state_out => state
+    state_out => state,
+    value_out => value
 );
 
-dataout <= state(3 downto 0);
+dataout <= value(3 downto 0);
 
 
 end Behavioral;
