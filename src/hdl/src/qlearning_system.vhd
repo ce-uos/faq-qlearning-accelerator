@@ -34,8 +34,7 @@ generic map (
     reward_width => env_reward_width,
     action_width => env_action_width,
     action_num => env_action_num,
-    state_num => env_state_num,
-    pipeline_stages => env_pipeline_stages
+    state_num => env_state_num
 )
 port map (
     clk => clk,
