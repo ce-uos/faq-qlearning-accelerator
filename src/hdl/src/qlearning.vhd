@@ -87,16 +87,16 @@ architecture Behavioral of qlearning is
     signal s2_last_qmax_value : std_logic_vector(reward_width-1 downto 0);
     
     
-    signal s3_awen : enable_type := (others => '0');
-    signal s3_w_avalue : value_array := (others => (others => '0'));
-    signal s3_new_qvalue : std_logic_vector(reward_width-1 downto 0);
-    signal s3_qtable_write : std_logic;
-    signal s3_qmax_update : std_logic;
-    signal s3_new_qmax : std_logic_vector(reward_width-1 downto 0);
-    signal s3_new_qmax_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
-    signal s3_last_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
-    signal s3_last_value : std_logic_vector(reward_width-1 downto 0) := (others => '0');
-    signal s3_last_state : std_logic_vector(state_width-1 downto 0);
+--    signal s3_awen : enable_type := (others => '0');
+--    signal s3_w_avalue : value_array := (others => (others => '0'));
+--    signal s3_new_qvalue : std_logic_vector(reward_width-1 downto 0);
+--    signal s3_qtable_write : std_logic;
+--    signal s3_qmax_update : std_logic;
+--    signal s3_new_qmax : std_logic_vector(reward_width-1 downto 0);
+--    signal s3_new_qmax_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
+--    signal s3_last_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
+--    signal s3_last_value : std_logic_vector(reward_width-1 downto 0) := (others => '0');
+--    signal s3_last_state : std_logic_vector(state_width-1 downto 0);
     
     signal action_rams_wa : std_logic_vector(state_width-1 downto 0);
     
@@ -136,19 +136,19 @@ begin
             )
             port map (
                 clk => clk,
-                wen => s3_awen(i),
+                wen => awen(i),
                 ren => state_valid,
-                waddr => s3_last_state,
+                waddr => last_state,
                 raddr => next_state,
                 dout => r_avalue(i),
-                din => s3_w_avalue(i)
+                din => w_avalue(i)
             );
         end generate gen_qtables;
     end generate;
     
     action_rams0 : if qconf_action_rams = 0 generate
         qtable_ra <= next_state & next_random_action;
-        qtable_wa <= s3_last_state & s3_last_action;
+        qtable_wa <= last_state & last_action;
         
         qtable : entity work.simple_bram 
         generic map (
@@ -158,16 +158,16 @@ begin
         )
         port map (
             clk => clk,
-            wen => s3_qtable_write,
+            wen => qtable_write,
             ren => '1',
             waddr => qtable_wa,
             raddr => qtable_ra,
             dout => qvalue,
-            din => s3_new_qvalue
+            din => new_qvalue
         );
     end generate;
     
-    qmax_write <= s3_new_qmax_action & s3_new_qmax;
+    qmax_write <= new_qmax_action & new_qmax;
     qmax_value <= next_qmax_read(reward_width-1 downto 0);
     qmax_action <= next_qmax_read((reward_width+action_width-1) downto reward_width);
     
@@ -179,9 +179,9 @@ begin
     )
     port map (
         clk => clk,
-        wen => s3_qmax_update,
+        wen => qmax_update,
         ren => state_valid,
-        waddr => s3_last_state,
+        waddr => last_state,
         raddr => next_state,
         dout => next_qmax_read,
         din => qmax_write
@@ -202,13 +202,13 @@ begin
         rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
         
         if qconf_sarsa = 0 then
-            maxvshifted <= std_logic_vector(shift_right(signed(s1_qmax_value), gamma) + signed(s1_last_reward) - signed(s1_last_value));
+            maxvshifted <= std_logic_vector(shift_right(signed(s1_qmax_value), gamma));
         else
-            maxvshifted <= std_logic_vector(shift_right(signed(last_value), gamma) + signed(s1_last_reward) - signed(s1_last_value));
+            maxvshifted <= std_logic_vector(shift_right(signed(last_value), gamma));
         end if;
         
         -- pipeline stage 2
-        newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_maxvshifted), alpha)));
+        newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha)));
         
         if qconf_action_rams = 1 then
             w_avalue(to_integer(unsigned(s2_last_action))) <= newval;
@@ -293,16 +293,16 @@ begin
             s2_qmax_value <= s1_qmax_value;
             s2_last_qmax_value <= s1_last_qmax_value;
             
-            s3_awen <= awen;
-            s3_w_avalue <= w_avalue;
-            s3_new_qvalue <= new_qvalue;
-            s3_qtable_write <= qtable_write;
-            s3_qmax_update <= qmax_update;
-            s3_new_qmax <= new_qmax;
-            s3_new_qmax_action <= new_qmax_action;
-            s3_last_value <= s2_last_value;
-            s3_last_state <= s2_last_state;
-            s3_last_action <= s2_last_action;
+--            s3_awen <= awen;
+--            s3_w_avalue <= w_avalue;
+--            s3_new_qvalue <= new_qvalue;
+--            s3_qtable_write <= qtable_write;
+--            s3_qmax_update <= qmax_update;
+--            s3_new_qmax <= new_qmax;
+--            s3_new_qmax_action <= new_qmax_action;
+--            s3_last_value <= s2_last_value;
+--            s3_last_state <= s2_last_state;
+--            s3_last_action <= s2_last_action;
         end if;
     end process;
     

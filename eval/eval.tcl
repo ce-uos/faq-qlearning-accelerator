@@ -39,7 +39,7 @@ proc runeval {evaldir base_dir} {
     close_project
 }
 
-set sws [list 16]
+set sws [list 4 6 8 10 12 14 16 18]
 set aws [list 2 3]
 
 for {set p 0} {$p < 2} {incr p} {
@@ -47,7 +47,7 @@ for {set p 0} {$p < 2} {incr p} {
         for {set s 0} {$s < 2} {incr s} {
             for {set i 0} {$i < 2} {incr i} {
                 set aw [lindex $aws $i]
-                for {set j 0} {$j < 1} {incr j} {
+                for {set j 0} {$j < 8} {incr j} {
                     set sw [lindex $sws $j]
                     if {$s == 1} {
                         set qors "sarsa"
