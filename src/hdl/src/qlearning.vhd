@@ -87,16 +87,25 @@ architecture Behavioral of qlearning is
     signal s2_last_qmax_value : std_logic_vector(reward_width-1 downto 0);
     
     
---    signal s3_awen : enable_type := (others => '0');
---    signal s3_w_avalue : value_array := (others => (others => '0'));
---    signal s3_new_qvalue : std_logic_vector(reward_width-1 downto 0);
---    signal s3_qtable_write : std_logic;
---    signal s3_qmax_update : std_logic;
---    signal s3_new_qmax : std_logic_vector(reward_width-1 downto 0);
---    signal s3_new_qmax_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
---    signal s3_last_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
---    signal s3_last_value : std_logic_vector(reward_width-1 downto 0) := (others => '0');
---    signal s3_last_state : std_logic_vector(state_width-1 downto 0);
+    --signal s3_awen : enable_type := (others => '0');
+    --signal s3_w_avalue : value_array := (others => (others => '0'));
+    --signal s3_new_qvalue : std_logic_vector(reward_width-1 downto 0);
+    --signal s3_qtable_write : std_logic;
+    --signal s3_qmax_update : std_logic;
+    --signal s3_new_qmax : std_logic_vector(reward_width-1 downto 0);
+    --signal s3_new_qmax_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
+    signal s3_last_action : std_logic_vector(action_width-1 downto 0) := (others => '0');
+    signal s3_last_value : std_logic_vector(reward_width-1 downto 0) := (others => '0');
+    signal s3_last_state : std_logic_vector(state_width-1 downto 0);
+    signal s3_last_qmax_value : std_logic_vector(reward_width-1 downto 0);
+    signal maxvshifted_plus_rsubv : std_logic_vector(reward_width-1 downto 0);
+    signal s3_maxvshifted_plus_rsubv : std_logic_vector(reward_width-1 downto 0);
+    signal s3_last_reward_valid : std_logic := '0';
+    
+    signal sl_last_action : std_logic_vector(action_width-1 downto 0);
+    signal sl_last_state : std_logic_vector(state_width-1 downto 0);
+    
+    signal newval_dbg : std_logic_vector(reward_width-1 downto 0);
     
     signal action_rams_wa : std_logic_vector(state_width-1 downto 0);
     
@@ -125,6 +134,16 @@ begin
 
     lfsr0 : entity work.lfsr_random generic map (std_logic_vector(seed0)) port map (clk, rng0);
     lfsr1 : entity work.lfsr_random generic map (std_logic_vector(seed1)) port map (clk, rng1);
+    
+    stage3_last_state_action : if qconf_4stage = 0 generate
+        sl_last_state <= s2_last_state;
+        sl_last_action <= s2_last_action;
+    end generate;
+    
+    stage4_last_state_action : if qconf_4stage = 1 generate
+        sl_last_state <= s3_last_state;
+        sl_last_action <= s3_last_action;
+    end generate;
 
     action_rams1 : if qconf_action_rams = 1 generate
         gen_qtables : for i in 0 to action_num-1 generate
@@ -138,7 +157,7 @@ begin
                 clk => clk,
                 wen => awen(i),
                 ren => state_valid,
-                waddr => last_state,
+                waddr => sl_last_state,
                 raddr => next_state,
                 dout => r_avalue(i),
                 din => w_avalue(i)
@@ -148,7 +167,7 @@ begin
     
     action_rams0 : if qconf_action_rams = 0 generate
         qtable_ra <= next_state & next_random_action;
-        qtable_wa <= last_state & last_action;
+        qtable_wa <= sl_last_state & sl_last_action;
         
         qtable : entity work.simple_bram 
         generic map (
@@ -181,54 +200,101 @@ begin
         clk => clk,
         wen => qmax_update,
         ren => state_valid,
-        waddr => last_state,
+        waddr => sl_last_state,
         raddr => next_state,
         dout => next_qmax_read,
         din => qmax_write
     );
     
-    qlearning_update_three : process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_qmax_value, s1_last_qmax_value, s1_last_reward_valid, 
-                                s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid, s2_qmax_value, s2_last_qmax_value, last_value)                 
-        variable newval : std_logic_vector(reward_width-1 downto 0);
-    begin      
-        qmax_update <= '0';
-        new_qmax <= (others => '0');
-        new_qmax_action <= (others => '0');
-        awen <= (others => '0');
-        w_avalue <= (others => (others => '0'));
-        new_qvalue <= (others => '0');
-        
-        -- pipeline stage 1
-        rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
-        
-        if qconf_sarsa = 0 then
-            maxvshifted <= std_logic_vector(shift_right(signed(s1_qmax_value), gamma));
-        else
-            maxvshifted <= std_logic_vector(shift_right(signed(last_value), gamma));
-        end if;
-        
-        -- pipeline stage 2
-        newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha)));
-        
-        if qconf_action_rams = 1 then
-            w_avalue(to_integer(unsigned(s2_last_action))) <= newval;
-            awen(to_integer(unsigned(s2_last_action))) <= s2_last_reward_valid;
-        else
-            new_qvalue <= newval;
-            qtable_write <= s2_last_reward_valid;
-        end if;
-        
-        if unsigned(newval) > unsigned(s2_last_qmax_value) then
-            qmax_update <= '1';
-            new_qmax <= newval;
-            new_qmax_action <= s2_last_action;
-        end if;
-    end process;
+    qlearning_update_three : if qconf_4stage = 0 generate
+         process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_qmax_value, s1_last_qmax_value, s1_last_reward_valid, 
+                                    s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid, s2_qmax_value, s2_last_qmax_value, last_value)
+            variable newval : std_logic_vector(reward_width-1 downto 0);
+        begin      
+            qmax_update <= '0';
+            new_qmax <= (others => '0');
+            new_qmax_action <= (others => '0');
+            awen <= (others => '0');
+            w_avalue <= (others => (others => '0'));
+            new_qvalue <= (others => '0');
+            
+            -- pipeline stage 1
+            rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
+            
+            if qconf_sarsa = 0 then
+                maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
+            else
+                maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+            end if;
+            
+            
+            -- pipeline stage 2
+            newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha)));
+            newval_dbg <= newval;
+            
+            if qconf_action_rams = 1 then
+                w_avalue(to_integer(unsigned(s2_last_action))) <= newval;
+                awen(to_integer(unsigned(s2_last_action))) <= s3_last_reward_valid;
+            else
+                new_qvalue <= newval;
+                qtable_write <= s2_last_reward_valid;
+            end if;
+            
+            if unsigned(newval) > unsigned(s2_last_qmax_value) then
+                qmax_update <= '1';
+                new_qmax <= newval;
+                new_qmax_action <= s2_last_action;
+            end if;
+        end process;
+    end generate;
     
-   
+    qlearning_update_four : if qconf_4stage = 1 generate
+        process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_qmax_value, s1_last_qmax_value, s1_last_reward_valid, 
+                                    s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid, s2_qmax_value, s2_last_qmax_value, last_value,
+                                    s3_last_action, s3_last_value, s3_maxvshifted_plus_rsubv, s3_last_reward_valid, s3_last_qmax_value)                 
+            variable newval : std_logic_vector(reward_width-1 downto 0);
+        begin      
+            qmax_update <= '0';
+            new_qmax <= (others => '0');
+            new_qmax_action <= (others => '0');
+            awen <= (others => '0');
+            w_avalue <= (others => (others => '0'));
+            new_qvalue <= (others => '0');
+            
+            -- pipeline stage 1
+            rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
+            
+            if qconf_sarsa = 0 then
+                maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
+            else
+                maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+            end if;
+            
+            -- pipeline stage 2
+            maxvshifted_plus_rsubv <=  std_logic_vector(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha));
+            
+            -- pipeline stage 3
+            newval := std_logic_vector(signed(s3_last_value) + signed(s3_maxvshifted_plus_rsubv));
+            newval_dbg <= newval;
+            
+            if qconf_action_rams = 1 then
+                w_avalue(to_integer(unsigned(s3_last_action))) <= newval;
+                awen(to_integer(unsigned(s3_last_action))) <= s3_last_reward_valid;
+            else
+                new_qvalue <= newval;
+                qtable_write <= s3_last_reward_valid;
+            end if;
+            
+            if unsigned(newval) > unsigned(s3_last_qmax_value) then
+                qmax_update <= '1';
+                new_qmax <= newval;
+                new_qmax_action <= s3_last_action;
+            end if;
+        end process;
+    end generate;
     
     epsilon_greedy_policy : if qconf_policy_random = 0 generate
-        actor : process (last_value, last_action, rng0, rng1, qvalue, qmax_value, qmax_action, random_action) begin
+        actor : process (last_value, last_action, rng0, rng1, qvalue, qmax_value, qmax_action, random_action, r_avalue) begin
             this_value <= last_value;
             this_action <= last_action;
             
@@ -292,17 +358,15 @@ begin
             s2_last_value <= s1_last_value;
             s2_qmax_value <= s1_qmax_value;
             s2_last_qmax_value <= s1_last_qmax_value;
-            
---            s3_awen <= awen;
---            s3_w_avalue <= w_avalue;
---            s3_new_qvalue <= new_qvalue;
---            s3_qtable_write <= qtable_write;
---            s3_qmax_update <= qmax_update;
---            s3_new_qmax <= new_qmax;
---            s3_new_qmax_action <= new_qmax_action;
---            s3_last_value <= s2_last_value;
---            s3_last_state <= s2_last_state;
---            s3_last_action <= s2_last_action;
+
+            -- this is removed by vivado if the last pipeline stage is not used
+            s3_last_value <= s2_last_value;
+            s3_last_state <= s2_last_state;
+            s3_last_action <= s2_last_action;
+            s3_maxvshifted_plus_rsubv <= maxvshifted_plus_rsubv;
+            s3_last_qmax_value <= s2_last_qmax_value;
+            s3_last_reward_valid <= s2_last_reward_valid;
+            s3_last_qmax_value <= s2_last_qmax_value;
         end if;
     end process;
     

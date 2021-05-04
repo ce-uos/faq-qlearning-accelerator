@@ -19,7 +19,9 @@ end blockworld_environment;
 architecture Behavioral of blockworld_environment is
     constant targetstate : std_logic_vector(env_state_width-1 downto 0) := (others => '1');
     signal state : std_logic_vector(env_state_width-1 downto 0) := (others => '0');  
-    signal next_state : std_logic_vector(env_state_width-1 downto 0) := (others => '0');    
+    signal next_state : std_logic_vector(env_state_width-1 downto 0) := (others => '0');  
+    constant reward_zeros : std_logic_vector(env_reward_width-1 downto env_reward_width/2) := (others => '0');  
+    constant reward_ones : std_logic_vector(env_reward_width/2-1 downto 0) := (others => '1');
 begin
 
     gen_next_state_process4 : if env_action_num = 4 generate
@@ -128,9 +130,9 @@ begin
     
     reward_process : process (state) begin
         if state = targetstate then
-            reward <= X"00FF";
+            reward <= reward_zeros & reward_ones;
         else
-            reward <= X"0000";
+            reward <= (others => '0');
         end if;
     end process;
 

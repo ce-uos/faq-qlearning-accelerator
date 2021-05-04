@@ -15,6 +15,7 @@ package config_constants is
     constant config_state_width : integer := %d;
     constant config_action_width : integer := %d;
     constant config_reward_width : integer := 16;
+    constant config_4stage : integer := 0;
 end config_constants;"
 
     set fp [open $path "w"]
@@ -39,39 +40,128 @@ proc runeval {evaldir base_dir} {
     close_project
 }
 
-set sws [list 4 6 8 10 12 14 16 18]
 set aws [list 2 3]
+set sws [list 4 6 8 10 12 14 16 18]
+#
+#for {set p 0} {$p < 2} {incr p} {
+#    for {set r 0} {$r < 2} {incr r} {
+#        for {set s 0} {$s < 2} {incr s} {
+#            for {set i 0} {$i < 2} {incr i} {
+#                set aw [lindex $aws $i]
+#                for {set j 0} {$j < 8} {incr j} {
+#                    set sw [lindex $sws $j]
+#                    if {$s == 0 && $r == 1 && $p == 0} {
+#                        continue
+#                    }
+#                    if {$s == 0 && $r == 0 && $p == 0} {
+#                        continue
+#                    }
+#                    if {$s == 1} {
+#                        set qors "sarsa"
+#                    } else {
+#                        set qors "ql"
+#                    }
+#                    if {$r == 1} {
+#                        set arams "actionrams"
+#                    } else {
+#                        set arams "singleram"
+#                    }
+#                    if {$p == 1} {
+#                        set policy "random"
+#                    } else {
+#                        set policy "egreedy"
+#                    }
+#                    set evaldir "reports_${qors}_${arams}_${policy}_aw${aw}_sw${sw}"
+#                    puts "$s $qors $r $arams  $p $policy"
+#                    puts $evaldir
+#                    file mkdir $evaldir
+#                    writeconfig $configdir $sw $aw $p $r $s
+#                    runeval $evaldir $base_dir
+#                }
+#            }
+#        }
+#    }
+#}
 
-for {set p 0} {$p < 2} {incr p} {
-    for {set r 0} {$r < 2} {incr r} {
-        for {set s 0} {$s < 2} {incr s} {
-            for {set i 0} {$i < 2} {incr i} {
-                set aw [lindex $aws $i]
-                for {set j 0} {$j < 8} {incr j} {
-                    set sw [lindex $sws $j]
-                    if {$s == 1} {
-                        set qors "sarsa"
-                    } else {
-                        set qors "ql"
-                    }
-                    if {$r == 1} {
-                        set arams "actionrams"
-                    } else {
-                        set arams "singleram"
-                    }
-                    if {$p == 1} {
-                        set policy "random"
-                    } else {
-                        set policy "egreedy"
-                    }
-                    set evaldir "reports_${qors}_${arams}_${policy}_aw${aw}_sw${sw}"
-                    file mkdir $evaldir
-                    writeconfig $configdir $sw $aw $p $r $s
-                    runeval $evaldir $base_dir
-                }
-            }
-        }
-    }
+#set s 0
+#set r 0
+#set p 1
+#for {set i 0} {$i < 2} {incr i} {
+#    set aw [lindex $aws $i]
+#    for {set j 0} {$j < 8} {incr j} {
+#        set sw [lindex $sws $j]
+#        if {$s == 1} {
+#            set qors "sarsa"
+#        } else {
+#            set qors "ql"
+#        }
+#        if {$r == 1} {
+#            set arams "actionrams"
+#        } else {
+#            set arams "singleram"
+#        }
+#        if {$p == 1} {
+#            set policy "random"
+#        } else {
+#            set policy "egreedy"
+#        }
+#        set evaldir "reports_${qors}_${arams}_${policy}_aw${aw}_sw${sw}"
+#        file mkdir $evaldir
+#        writeconfig $configdir $sw $aw $p $r $s
+#        runeval $evaldir $base_dir
+#    }
+#}
+
+#set s 0
+#set r 0
+#set p 1
+#set aw 3
+#for {set j 0} {$j < 4} {incr j} {
+#    set sw [lindex $sws $j]
+#    if {$s == 1} {
+#        set qors "sarsa"
+#    } else {
+#        set qors "ql"
+#    }
+#    if {$r == 1} {
+#        set arams "actionrams"
+#    } else {
+#        set arams "singleram"
+#    }
+#    if {$p == 1} {
+#        set policy "random"
+#    } else {
+#        set policy "egreedy"
+#    }
+#    set evaldir "reports_${qors}_${arams}_${policy}_aw${aw}_sw${sw}"
+#    file mkdir $evaldir
+#    writeconfig $configdir $sw $aw $p $r $s
+#    runeval $evaldir $base_dir
+#}
+
+set s 0
+set r 0
+set p 1
+set aw 3
+set sw 18
+if {$s == 1} {
+    set qors "sarsa"
+} else {
+    set qors "ql"
 }
+if {$r == 1} {
+    set arams "actionrams"
+} else {
+    set arams "singleram"
+}
+if {$p == 1} {
+    set policy "random"
+} else {
+    set policy "egreedy"
+}
+set evaldir "reports_${qors}_${arams}_${policy}_aw${aw}_sw${sw}"
+file mkdir $evaldir
+writeconfig $configdir $sw $aw $p $r $s
+runeval $evaldir $base_dir
 
 exit

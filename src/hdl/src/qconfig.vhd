@@ -11,5 +11,7 @@ package qconfig is
     
     constant qconf_sarsa : integer := config_sarsa;
     
+    constant qconf_4stage : integer := config_4stage;
+    
     type logic_vector_array is array(natural range <>) of std_logic_vector(31 downto 0);
 end package;
