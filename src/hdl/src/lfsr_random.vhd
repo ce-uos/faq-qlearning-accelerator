@@ -1,50 +1,24 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 07/02/2020 06:33:56 PM
--- Design Name: 
--- Module Name: lfsr_random - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
-
+-- This file implements a simple Linear Feedback Shift Register (LFSR) which can be used to generate pseudo-random numbers
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
 entity lfsr_random is
   Generic (
-    SEED : std_logic_vector(31 downto 0)
+    SEED : std_logic_vector(31 downto 0)    -- Seed for the random number sequence
   );
   Port (
-    clk : in std_logic;
-    rng : out std_logic_vector(31 downto 0)
+    clk : in std_logic;                     -- clock inout
+    rng : out std_logic_vector(31 downto 0) -- random number output
    );
 end lfsr_random;
 
 architecture Behavioral of lfsr_random is
+    -- interal lfsr value register, initialized with the seed
     signal lfsr : std_logic_vector(31 downto 0) := SEED;
 begin
 
+    -- this process computes the next pseudo-random number
     process (clk) 
         variable newbit : std_logic;
     begin

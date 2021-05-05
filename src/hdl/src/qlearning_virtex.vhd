@@ -1,36 +1,9 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 03/03/2021 02:23:52 PM
--- Design Name: 
--- Module Name: qlearning_virtex - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
+-- This is the top level file used to synthesize the design for a large virtex FPGA.
 
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use work.envconfig.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
-
--- Uncomment the following library declaration if instantiating
--- any Xilinx leaf cells in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
 
 entity qlearning_virtex is
   Port ( 
