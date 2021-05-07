@@ -354,7 +354,7 @@ begin
     
     -- this process generates the next action for the random policy
     random_policy : if qconf_policy_random = 1 generate
-        actor : process (rng1, random_action, qvalue) begin
+        actor : process (rng1, random_action, qvalue, r_avalue) begin
             next_random_action <= rng1(action_width-1 downto 0);
             
             -- use a random action as the next action
