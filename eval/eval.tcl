@@ -208,43 +208,42 @@ set sws [list 4 6 8 10 12 14 16 18]
 
 set s 0
 set p 1
-set m 1
-for {set r 0} {$r < 2} {incr r} {
-    for {set s34 0} {$s34 < 2} {incr s34} {
-        for {set i 0} {$i < 2} {incr i} {
-            set aw [lindex $aws $i]
-            for {set j 0} {$j < 8} {incr j} {
-                set sw [lindex $sws $j]
-                if {$s == 1} {
-                    set qors "sarsa"
-                } else {
-                    set qors "ql"
-                }
-                if {$r == 1} {
-                    set arams "actionrams"
-                } else {
-                    set arams "singleram"
-                }
-                if {$p == 1} {
-                    set policy "random"
-                } else {
-                    set policy "egreedy"
-                }
-                if {$s34 == 0} {
-                    set stages "3stages"
-                } else {
-                    set stages "4stages"
-                }
-                if {$m == 0} {
-                    set mults "shift"
-                } else {
-                    set mults "dsps"
-                }
-                set evaldir "reports_${qors}_${arams}_${policy}_${stages}_${mults}_aw${aw}_sw${sw}"
-                file mkdir $evaldir
-                writeconfig $configdir $sw $aw $p $r $s $s34 $m
-                runeval $evaldir $base_dir
+set m 0
+set r 1
+for {set s34 0} {$s34 < 2} {incr s34} {
+    for {set i 0} {$i < 2} {incr i} {
+        set aw [lindex $aws $i]
+        for {set j 0} {$j < 8} {incr j} {
+            set sw [lindex $sws $j]
+            if {$s == 1} {
+                set qors "sarsa"
+            } else {
+                set qors "ql"
             }
+            if {$r == 1} {
+                set arams "actionrams"
+            } else {
+                set arams "singleram"
+            }
+            if {$p == 1} {
+                set policy "random"
+            } else {
+                set policy "egreedy"
+            }
+            if {$s34 == 0} {
+                set stages "3stages"
+            } else {
+                set stages "4stages"
+            }
+            if {$m == 0} {
+                set mults "shift"
+            } else {
+                set mults "dsps"
+            }
+            set evaldir "reports_${qors}_${arams}_${policy}_${stages}_${mults}_aw${aw}_sw${sw}"
+            file mkdir $evaldir
+            writeconfig $configdir $sw $aw $p $r $s $s34 $m
+            runeval $evaldir $base_dir
         }
     }
 }

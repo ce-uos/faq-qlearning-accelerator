@@ -166,6 +166,15 @@ architecture Behavioral of qlearning is
     signal mult_alpha : std_logic_vector(23 downto 0) := X"000080"; -- 0.5
     signal s2_maxvshifted_rsubv_malpha : std_logic_vector(47 downto 0);
     signal s2_maxvshifted_rsubv_malpha_16 : std_logic_vector(15 downto 0);
+    
+    constant MAX_LEVELS : integer := integer(ceil(log2(real(action_num))));
+    type leveltemps is array(0 to MAX_LEVELS) of value_array;
+    signal maxdbg : leveltemps;
+    signal maxidxdbg : leveltemps;
+    signal maxvalue : std_logic_vector(reward_width-1 downto 0);
+    signal maxidx : std_logic_vector(action_width-1 downto 0);
+
+
 begin
 
     gamma_mult_gen : if qconf_mult = 1 generate
@@ -260,21 +269,63 @@ begin
     qmax_action <= next_qmax_read((reward_width+action_width-1) downto reward_width);
     
     -- the Qmax table
-    qmaxram : entity work.simple_bram
-    generic map (
-        memsize => state_num,
-        addr_width => state_width,
-        data_width => reward_width + action_width
-    )
-    port map (
-        clk => clk,
-        wen => qmax_update,
-        ren => state_valid,
-        waddr => sl_last_state,
-        raddr => next_state,
-        dout => next_qmax_read,
-        din => qmax_write
-    );
+    qmaxram_gen : if qconf_action_rams = 0 generate
+        qmaxram : entity work.simple_bram
+        generic map (
+            memsize => state_num,
+            addr_width => state_width,
+            data_width => reward_width + action_width
+        )
+        port map (
+            clk => clk,
+            wen => qmax_update,
+            ren => state_valid,
+            waddr => sl_last_state,
+            raddr => next_state,
+            dout => next_qmax_read,
+            din => qmax_write
+        );
+    end generate;
+    
+    max : if qconf_action_rams = 1 generate
+        pmax : process (r_avalue, maxvalue, maxidx) 
+            variable temps : leveltemps;
+            variable idxtemps : leveltemps;
+        begin
+        
+            temps(MAX_LEVELS) := r_avalue;
+            
+            for i in 0 to (2**MAX_LEVELS)-1 loop
+                idxtemps(MAX_LEVELS)(i) := std_logic_vector(to_unsigned(i, reward_width));
+            end loop;
+        
+            for lvl in MAX_LEVELS-1 downto 1 loop
+                for cmp in 0 to (2**lvl)-1 loop
+                    if signed(temps(lvl + 1)(cmp)) > signed(temps(lvl + 1)(cmp + 2**lvl)) then
+                        temps(lvl)(cmp) :=  temps(lvl + 1)(cmp);
+                        idxtemps(lvl)(cmp) := idxtemps(lvl + 1)(cmp);
+                    else 
+                        temps(lvl)(cmp) :=  temps(lvl + 1)(cmp + 2**lvl);
+                        idxtemps(lvl)(cmp) := idxtemps(lvl + 1)(cmp + 2**lvl);
+                    end if;
+                end loop;
+            end loop;
+            
+            if signed(temps(1)(0)) > signed(temps(1)(1)) then
+                maxvalue <= temps(1)(0);
+                maxidx <= idxtemps(1)(0)(action_width-1 downto 0);
+            else
+                maxvalue <= temps(1)(1);
+                maxidx <= idxtemps(1)(1)(action_width-1 downto 0);
+            end if;
+            
+            maxdbg <= temps;
+            maxidxdbg <= idxtemps;
+        
+        end process;
+    end generate;
+
+    
     
     -- Q-Learning update with 3 pipeline stages
     qlearning_update_three : if qconf_4stage = 0 generate
@@ -337,10 +388,12 @@ begin
             end if;
             
             -- write max value to Qmax table
-            if unsigned(newval) > unsigned(s2_last_qmax_value) then
-                qmax_update <= '1';
-                new_qmax <= newval;
-                new_qmax_action <= s2_last_action;
+            if qconf_action_rams = 0 then
+                if unsigned(newval) > unsigned(s2_last_qmax_value) then
+                    qmax_update <= '1';
+                    new_qmax <= newval;
+                    new_qmax_action <= s2_last_action;
+                end if;
             end if;
         end process;
     end generate;
@@ -401,10 +454,12 @@ begin
             end if;
             
             -- write max value to Qmax table
-            if unsigned(newval) > unsigned(s3_last_qmax_value) then
-                qmax_update <= '1';
-                new_qmax <= newval;
-                new_qmax_action <= s3_last_action;
+            if qconf_action_rams = 0 then
+                if unsigned(newval) > unsigned(s3_last_qmax_value) then
+                    qmax_update <= '1';
+                    new_qmax <= newval;
+                    new_qmax_action <= s3_last_action;
+                end if;
             end if;
         end process;
     end generate;
@@ -427,8 +482,13 @@ begin
                 end if;
             else
                 -- if random number is larger than epsilon, use the best action
-                this_action <= qmax_action;
-                this_value <= qmax_value;
+                if qconf_action_rams = 0 then
+                    this_action <= qmax_action;
+                    this_value <= qmax_value;
+                else
+                    this_action <= maxidx;
+                    this_value <= maxvalue;
+                end if;
             end if;
         end process;
     end generate;
@@ -460,7 +520,11 @@ begin
             last_state <= state;
             last_reward <= reward;
             last_reward_valid <= reward_valid;
-            last_qmax_value <= qmax_value;
+            if qconf_action_rams = 0 then
+                last_qmax_value <= qmax_value;
+            else    
+                last_qmax_value <= maxvalue;
+            end if;
             last_qmax_action <= qmax_action;
             random_action <= next_random_action;
             
@@ -469,7 +533,11 @@ begin
             s1_last_action <= last_action;
             s1_last_value <= last_value;
             s1_last_reward <= last_reward;
-            s1_qmax_value <= qmax_value;
+            if qconf_action_rams = 0 then
+                s1_qmax_value <= qmax_value;
+            else
+                s1_qmax_value <= maxvalue;
+            end if;
             s1_last_qmax_value <= last_qmax_value;
             s1_last_state <= last_state;
             

@@ -24,7 +24,7 @@ package config_constants is
     
     -- Configure the state width
     -- this will result in 2^(state_width) possible states (not all of them need to be used)
-    constant config_state_width : integer := 18;
+    constant config_state_width : integer := 6;
     
     -- Configure the action width
     -- this will result in 2^(action_width) possible actions
@@ -39,6 +39,6 @@ package config_constants is
     constant config_4stage : integer := 1;
     
     
-    constant config_mult : integer := 1;
+    constant config_mult : integer := 0;
 end config_constants;
 
