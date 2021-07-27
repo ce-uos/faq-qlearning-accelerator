@@ -1,3 +1,4 @@
+
 -- This file contains constants to configure the design.
 
 library IEEE;
@@ -14,7 +15,7 @@ package config_constants is
     -- Choose the Q-Table memory configuration
     -- 0 = single memory
     -- 1 = one memory per possible action
-    constant config_action_rams : integer := 0;
+    constant config_action_rams : integer := 1;
     
     -- Choose the algorithm
     -- 0 = Q-Learning
@@ -23,17 +24,21 @@ package config_constants is
     
     -- Configure the state width
     -- this will result in 2^(state_width) possible states (not all of them need to be used)
-    constant config_state_width : integer := 4;
+    constant config_state_width : integer := 18;
     
     -- Configure the action width
     -- this will result in 2^(action_width) possible actions
-    constant config_action_width : integer := 2;
+    constant config_action_width : integer := 3;
     
     -- Configure the reward width
     constant config_reward_width : integer := 16;
     
     -- Configure the number of pipeline stages
-    -- 0 = 4 stages
-    -- 1 = 3 stages
-    constant config_4stage : integer := 0;
+    -- 0 = 3 stages
+    -- 1 = 4 stages
+    constant config_4stage : integer := 1;
+    
+    
+    constant config_mult : integer := 1;
 end config_constants;
+

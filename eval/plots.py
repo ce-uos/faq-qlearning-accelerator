@@ -131,7 +131,7 @@ def main():
     qtaccel_aw2_freq_sarsa = [181, 180, 180, 179, 171, 150]
     qtaccel_aw3_bram = [0.02, 0.09, 0.32, 1.34, 4.85, 19.42, 78.12]
     qtaccel_power = [75, 60, 75, 80, 110, 190, 225]
-    faq_power_achievable = [93, 93, 107, 156, 319, 996, 2184, 5855]
+    faq_power_achievable = list(map(lambda x : x / 1000, [93, 93, 107, 156, 319, 996, 2184, 5855]))
     subset = ["sw6", "sw8", "sw10", "sw12", "sw16", "sw18"]
     subset2 = ["sw6", "sw8", "sw10", "sw12", "sw14", "sw16", "sw18"]
     data = loaddata()
@@ -157,7 +157,7 @@ def main():
     ax.set_xticklabels(["16","64", "256", "1024", "4096", str(2**14), str(2**16), str(2**18)])
     ax.legend()
     plt.xlabel("Number of States |S|")
-    plt.ylabel("Throughput [MHz]")
+    plt.ylabel("Throughput [MSps]")
     plt.title("Throughput Evaluation FAQ 1")
     plt.savefig("plots/faq_throughput.pdf")
 
@@ -179,7 +179,7 @@ def main():
     ax.set_xticklabels(["16","64", "256", "1024", "4096", str(2**14), str(2**16), str(2**18)])
     ax.legend()
     plt.xlabel("Number of States |S|")
-    plt.ylabel("Throughput [MHz]")
+    plt.ylabel("Throughput [MSps]")
     plt.title("Throughput Evaluation FAQ 2")
     plt.savefig("plots/faq_throughput_2.pdf")
 
@@ -198,13 +198,13 @@ def main():
     ax.plot([],[],label="Power",color="#306B34")
     ax.set_xticks(ticks)
     ax.set_xticklabels(["16","64", "256", "1024", "4096", str(2**14), str(2**16), str(2**18)])
-    ax.set_ylabel("Utilization")
+    ax.set_ylabel("Resource Utilization")
     ax.legend()
 
     ax2 = ax.twinx()
     ax2.plot(ticks, faq_power_achievable, color="#306B34", label="Power")
     #ax2.legend(loc=1)
-    ax2.set_ylabel("Power [mW]")
+    ax2.set_ylabel("Power [W]")
 
     #plt.legend()
     plt.xlabel("Number of States |S|")
@@ -223,7 +223,7 @@ def main():
     ax.set_xticklabels(["64", "256", "1024", "4096", str(2**16), str(2**18)])
     ax.legend()
     plt.xlabel("Number of States |S|")
-    plt.ylabel("Throughput [MHz]")
+    plt.ylabel("Throughput [MSps]")
     plt.title("Timing Comparison with QTAccel")
     plt.savefig("plots/faq_qtaccel_throughput.pdf")
 

@@ -27,5 +27,7 @@ package qconfig is
     -- 1 = 3 stages
     constant qconf_4stage : integer := config_4stage;
     
+    constant qconf_mult : integer := config_mult;
+    
     type logic_vector_array is array(natural range <>) of std_logic_vector(31 downto 0);
 end package;

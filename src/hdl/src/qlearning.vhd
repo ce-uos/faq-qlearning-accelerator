@@ -149,7 +149,54 @@ architecture Behavioral of qlearning is
     signal next_random_action : std_logic_vector(action_width-1 downto 0);
     signal random_action : std_logic_vector(action_width-1 downto 0);
     signal last_random_action : std_logic_vector(action_width-1 downto 0);
+    
+    COMPONENT mult_24_dsps_nopipe
+      PORT (
+        A : IN STD_LOGIC_VECTOR(23 DOWNTO 0);
+        B : IN STD_LOGIC_VECTOR(23 DOWNTO 0);
+        P : OUT STD_LOGIC_VECTOR(47 DOWNTO 0)
+      );
+    END COMPONENT;
+    
+    signal s1_qmax_value_24 : std_logic_vector(23 downto 0);
+    signal s1_qmax_value_mgamma : std_logic_vector(47 downto 0);
+    signal s1_qmax_value_mgamma_16 : std_logic_vector(15 downto 0);
+    signal mult_gamma : std_logic_vector(23 downto 0) := X"000080"; -- 0.5
+    signal s2_maxvshifted_rsubv_24 : std_logic_vector(23 downto 0);
+    signal mult_alpha : std_logic_vector(23 downto 0) := X"000080"; -- 0.5
+    signal s2_maxvshifted_rsubv_malpha : std_logic_vector(47 downto 0);
+    signal s2_maxvshifted_rsubv_malpha_16 : std_logic_vector(15 downto 0);
 begin
+
+    gamma_mult_gen : if qconf_mult = 1 generate
+        process (s1_qmax_value, last_value) begin
+            if qconf_sarsa = 0 then
+                s1_qmax_value_24 <= s1_qmax_value(15 downto 0) & X"00";
+            else
+                s1_qmax_value_24 <= last_value(15 downto 0) & X"00";
+            end if;
+        end process;
+        
+        gamma_mult : mult_24_dsps_nopipe port map (
+            A => s1_qmax_value_24,
+            B => mult_gamma,
+            P => s1_qmax_value_mgamma
+        );
+        
+        s1_qmax_value_mgamma_16 <= s1_qmax_value_mgamma(31 downto 16);
+    end generate;
+    
+    alpha_mult_gen : if qconf_mult = 1 generate
+
+        s2_maxvshifted_rsubv_24 <= std_logic_vector(signed(s2_maxvshifted) + signed(s2_rsubv)) & X"00";
+        alpha_mult : mult_24_dsps_nopipe port map (
+            A => s2_maxvshifted_rsubv_24,
+            B => mult_alpha,
+            P => s2_maxvshifted_rsubv_malpha
+        );
+        
+        s2_maxvshifted_rsubv_malpha_16 <= s2_maxvshifted_rsubv_malpha(31 downto 16);
+    end generate;
 
     -- instatiation of LFSRs for random number generation
     lfsr0 : entity work.lfsr_random generic map (std_logic_vector(seed0)) port map (clk, rng0);
@@ -232,7 +279,8 @@ begin
     -- Q-Learning update with 3 pipeline stages
     qlearning_update_three : if qconf_4stage = 0 generate
          process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_qmax_value, s1_last_qmax_value, s1_last_reward_valid, 
-                                    s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid, s2_qmax_value, s2_last_qmax_value, last_value)
+                                    s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid, s2_qmax_value, s2_last_qmax_value, last_value,
+                                    s1_qmax_value_mgamma_16, s2_maxvshifted_rsubv_malpha_16)
             variable newval : std_logic_vector(reward_width-1 downto 0);
         begin      
             -- set some values to 0 as default
@@ -246,17 +294,37 @@ begin
             -- pipeline stage 1
             rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
             
-            if qconf_sarsa = 0 then
-                -- Q-Learning update
-                maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
-            else
-                -- SARSA update
-                maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+--            if qconf_sarsa = 0 then
+--                -- Q-Learning update
+--                maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
+--            else
+--                -- SARSA update
+--                maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+--            end if;
+            
+            if qconf_mult = 0 then
+                if qconf_sarsa = 0 then
+                    -- Q-Learning update
+                    maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
+                else
+                    -- SARSA update
+                    maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+                end if;
+            else 
+                if qconf_sarsa = 0 then
+                    maxvshifted <= std_logic_vector(signed(s1_qmax_value) - signed(s1_qmax_value_mgamma_16));
+                else
+                    maxvshifted <= std_logic_vector(signed(last_value) - signed(s1_qmax_value_mgamma_16));
+                end if;
             end if;
             
             
             -- pipeline stage 2
-            newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha)));
+            if qconf_mult = 0 then
+                newval := std_logic_vector(signed(s2_last_value) + signed(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha)));
+            else
+                newval := std_logic_vector(signed(s2_last_value) + signed(s2_maxvshifted_rsubv_malpha_16));
+            end if;
             newval_dbg <= newval;
             
             -- write values back to Q-table
@@ -281,7 +349,8 @@ begin
     qlearning_update_four : if qconf_4stage = 1 generate
         process (enable, s1_last_action, s1_last_value, s1_last_reward, s1_qmax_value, s1_last_qmax_value, s1_last_reward_valid, 
                                     s2_last_action, s2_last_value, s2_rsubv, s2_maxvshifted, s2_last_reward_valid, s2_qmax_value, s2_last_qmax_value, last_value,
-                                    s3_last_action, s3_last_value, s3_maxvshifted_plus_rsubv, s3_last_reward_valid, s3_last_qmax_value)                 
+                                    s3_last_action, s3_last_value, s3_maxvshifted_plus_rsubv, s3_last_reward_valid, s3_last_qmax_value,
+                                    s1_qmax_value_mgamma_16, s2_maxvshifted_rsubv_malpha_16)                 
             variable newval : std_logic_vector(reward_width-1 downto 0);
         begin      
             -- set some signals to 0 as default
@@ -295,16 +364,28 @@ begin
             -- pipeline stage 1
             rsubv <= std_logic_vector(signed(s1_last_reward) - signed(s1_last_value));
             
-            if qconf_sarsa = 0 then
-                -- Q-Learning update
-                maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
-            else
-                -- SARSA update
-                maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+            if qconf_mult = 0 then
+                if qconf_sarsa = 0 then
+                    -- Q-Learning update
+                    maxvshifted <= std_logic_vector(signed(s1_qmax_value) - shift_right(signed(s1_qmax_value), gamma));
+                else
+                    -- SARSA update
+                    maxvshifted <= std_logic_vector(signed(last_value) - shift_right(signed(last_value), gamma));
+                end if;
+            else 
+                if qconf_sarsa = 0 then
+                    maxvshifted <= std_logic_vector(signed(s1_qmax_value) - signed(s1_qmax_value_mgamma_16));
+                else
+                    maxvshifted <= std_logic_vector(signed(last_value) - signed(s1_qmax_value_mgamma_16));
+                end if;
             end if;
             
             -- pipeline stage 2
-            maxvshifted_plus_rsubv <=  std_logic_vector(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha));
+            if qconf_mult = 0 then
+                maxvshifted_plus_rsubv <=  std_logic_vector(shift_right(signed(s2_maxvshifted) + signed(s2_rsubv), alpha));
+            else 
+                maxvshifted_plus_rsubv <= s2_maxvshifted_rsubv_malpha_16;
+            end if;
             
             -- pipeline stage 3
             newval := std_logic_vector(signed(s3_last_value) + signed(s3_maxvshifted_plus_rsubv));
